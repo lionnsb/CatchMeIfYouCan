@@ -50,4 +50,31 @@ router.get('/:lobbyId', async (req, res) => {
   }
 });
 
+// z. B. in player.routes.js
+router.delete('/:playerId', async (req, res) => {
+  const { playerId } = req.params;
+  try {
+    const snap = await db.ref('lobbies').once('value');
+    let removed = false;
+
+    snap.forEach((lobbySnap) => {
+      const lobby = lobbySnap.val();
+      if (lobby.players && lobby.players[playerId]) {
+        db.ref(`lobbies/${lobbySnap.key}/players/${playerId}`).remove();
+        removed = true;
+      }
+    });
+
+    if (removed) {
+      return res.status(200).json({ success: true });
+    } else {
+      return res.status(404).json({ error: 'Player not found in any lobby' });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Fehler beim Entfernen des Spielers' });
+  }
+});
+
+
 export default router;

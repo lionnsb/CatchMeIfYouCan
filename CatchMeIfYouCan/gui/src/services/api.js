@@ -8,11 +8,12 @@ export async function createLobby() {
   return lobbyId;
 }
 
-export async function joinLobby(lobbyId) {
+// jetzt mit nickname & isAdmin-Flag
+export async function joinLobby(lobbyId, nickname, isAdmin = false) {
   const res = await fetch(`${BASE}/player`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lobbyId }),
+    body: JSON.stringify({ lobbyId, nickname, admin: isAdmin }),
   });
   if (!res.ok) {
     const { error } = await res.json();
@@ -21,6 +22,15 @@ export async function joinLobby(lobbyId) {
   const { playerId } = await res.json();
   return playerId;
 }
+
+export async function leaveLobby(lobbyId, playerId) {
+  const res = await fetch(`http://localhost:3001/api/player/${lobbyId}/${playerId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Fehler beim Verlassen der Lobby');
+  return true;
+}
+
 
 export async function fetchLobby(lobbyId) {
   const res = await fetch(`${BASE}/lobby/${lobbyId}`);
@@ -36,4 +46,10 @@ export async function postPosition(lobbyId, playerId, position) {
   });
   if (!res.ok) throw new Error('Position konnte nicht gesendet werden');
   return res.json();
+}
+// src/services/api.js
+export async function getLobbyPlayers(lobbyId) {
+  const res = await fetch(`http://localhost:3001/api/lobby/${lobbyId}`);
+  const data = await res.json();
+  return data.players || {};
 }

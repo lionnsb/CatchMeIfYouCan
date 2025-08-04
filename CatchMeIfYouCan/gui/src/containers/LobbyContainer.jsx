@@ -1,61 +1,124 @@
 // src/containers/LobbyContainer.jsx
+
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LobbyMenu from '../components/Lobby/LobbyMenu';
+import LobbySetup from '../components/Lobby/LobbySetup';
 import MapWrapper from '../components/MapWrapper';
-import { createLobby, joinLobby } from '../services/api';
+import {
+  createLobby,
+  joinLobby,
+  leaveLobby as apiLeaveLobby,
+} from '../services/api';
 
 export default function LobbyContainer() {
   const [session, setSession] = useState(null);
+  const [phase, setPhase] = useState('menu'); // 'menu' | 'setup' | 'play'
+  const [gameSettings, setGameSettings] = useState(null);
+  const navigate = useNavigate();
 
-  // Prüfe beim Mount, ob bereits eine Session im localStorage liegt
+  // Beim ersten Mount: Daten aus localStorage laden
   useEffect(() => {
     const playerId = localStorage.getItem('playerId');
-    const lobbyId  = localStorage.getItem('lobbyId');
-    if (playerId && lobbyId) {
-      setSession({ playerId, lobbyId });
+    const lobbyId = localStorage.getItem('lobbyId');
+    const nickname = localStorage.getItem('nickname');
+    const admin = localStorage.getItem('admin') === 'true';
+    const gs = localStorage.getItem('gameSettings');
+    const parsedGS = gs ? JSON.parse(gs) : null;
+
+    if (playerId && lobbyId && nickname) {
+      setSession({ playerId, lobbyId, nickname, admin });
+      if (parsedGS) {
+        setGameSettings(parsedGS);
+        setPhase('play');
+        navigate(`/lobby/${lobbyId}`);
+      } else {
+        setPhase('setup');
+        navigate(`/lobby/${lobbyId}`);
+      }
     }
-  }, []);
+  }, [navigate]);
 
-  // Callback für „Lobby beitreten“
-  const handleJoin = async (lobbyId) => {
-    const playerId = await joinLobby(lobbyId);
+  // Handler: Join
+  const handleJoin = async (lobbyId, nickname) => {
+    const playerId = await joinLobby(lobbyId, nickname, false);
     localStorage.setItem('playerId', playerId);
     localStorage.setItem('lobbyId', lobbyId);
-    setSession({ playerId, lobbyId });
+    localStorage.setItem('nickname', nickname);
+    localStorage.setItem('admin', 'false');
+    setSession({ playerId, lobbyId, nickname, admin: false });
+    setPhase('setup');
+    navigate(`/lobby/${lobbyId}`);
   };
 
-  // Callback für „Neue Lobby erstellen & beitreten“
-  const handleCreate = async () => {
-    const lobbyId  = await createLobby();
-    const playerId = await joinLobby(lobbyId);
+  // Handler: Create
+  const handleCreate = async (nickname) => {
+    const lobbyId = await createLobby();
+    const playerId = await joinLobby(lobbyId, nickname, true);
     localStorage.setItem('playerId', playerId);
     localStorage.setItem('lobbyId', lobbyId);
-    setSession({ playerId, lobbyId });
+    localStorage.setItem('nickname', nickname);
+    localStorage.setItem('admin', 'true');
+    setSession({ playerId, lobbyId, nickname, admin: true });
+    setPhase('setup');
+    navigate(`/lobby/${lobbyId}`);
   };
 
-  // Callback für „Lobby verlassen“
-  const handleLeave = () => {
+  // Handler: Start
+  const handleStart = (settings) => {
+    if (!session.admin) return;
+    localStorage.setItem('gameSettings', JSON.stringify(settings));
+    setGameSettings(settings);
+    setPhase('play');
+  };
+
+  // Handler: Leave
+  const handleLeave = async () => {
+    if (session) {
+      try {
+        await apiLeaveLobby(session.lobbyId, session.playerId);
+      } catch (err) {
+        console.warn('Fehler beim Verlassen der Lobby:', err);
+      }
+    }
     localStorage.removeItem('playerId');
     localStorage.removeItem('lobbyId');
+    localStorage.removeItem('nickname');
+    localStorage.removeItem('admin');
+    localStorage.removeItem('gameSettings');
     setSession(null);
+    setGameSettings(null);
+    setPhase('menu');
+    navigate(`/`);
   };
 
-  // Wenn eine Session existiert, zeige die Map mit Leave-Button
-  if (session) {
+  // Rendering je nach Phase
+  if (phase === 'menu' && !session) {
+    return <LobbyMenu onJoin={handleJoin} onCreate={handleCreate} />;
+  }
+
+  if (phase === 'setup' && session) {
     return (
-      <MapWrapper
-        playerId={session.playerId}
+      <LobbySetup
         lobbyId={session.lobbyId}
-        onLeave={handleLeave}
+        playerId={session.playerId}
+        isAdmin={session.admin}
+        onStart={handleStart}
+        onLeaveLobby={handleLeave}
       />
     );
   }
 
-  // Ansonsten zeige das Lobby-Menu
-  return (
-    <LobbyMenu
-      onJoin={handleJoin}
-      onCreate={handleCreate}
-    />
-  );
+  if (phase === 'play' && session) {
+    return (
+      <MapWrapper
+        lobbyId={session.lobbyId}
+        playerId={session.playerId}
+        onLeave={handleLeave}
+        gameSettings={gameSettings}
+      />
+    );
+  }
+
+  return null;
 }
