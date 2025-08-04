@@ -66,3 +66,21 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+
+.lobby-setup-container {
+  max-width: 600px;
+  margin: auto;
+  text-align: center;
+}
+
+.player-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+.player-list li {
+  margin: 8px 0;
+  font-size: 1.1rem;
+}

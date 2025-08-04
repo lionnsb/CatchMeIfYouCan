@@ -2,48 +2,61 @@ import { useState } from 'react';
 
 export default function JoinLobbyForm({ onJoin }) {
   const [lobbyId, setLobbyId] = useState('');
+  const [error, setError] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onJoin(lobbyId.trim().toUpperCase());
+    setError(null);
+    const id = lobbyId.trim().toUpperCase();
+    if (!id) {
+      setError('Bitte Lobby-ID eingeben');
+      return;
+    }
+    try {
+      await onJoin(id);
+    } catch (err) {
+      setError(err.message || 'Beitritt fehlgeschlagen');
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
-      <h2 style={styles.heading}>🎮 Einer Lobby beitreten</h2>
+      <label style={styles.label}>Lobby-Code eingeben:</label>
       <input
         type="text"
-        placeholder="Lobby-ID eingeben"
         value={lobbyId}
         onChange={(e) => setLobbyId(e.target.value)}
+        placeholder="z. B. 5U3QX"
         style={styles.input}
       />
-      <button type="submit" style={styles.joinButton}>
-        Beitreten
-      </button>
+      <button type="submit" style={styles.button}>Beitreten</button>
+      {error && <p style={styles.error}>{error}</p>}
     </form>
   );
 }
 
 const styles = {
-  form: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
-  heading: { color: '#fff', textAlign: 'center', margin: 0 },
+  form: { textAlign: 'center' },
+  label: { display: 'block', marginBottom: '0.5rem', color: '#fff' },
   input: {
-    padding: '0.6rem',
-    borderRadius: '6px',
-    border: '1px solid #555',
+    width: '100%',
+    padding: '0.5rem',
+    marginBottom: '0.5rem',
+    borderRadius: 6,
+    border: '1px solid #444',
     backgroundColor: '#333',
     color: '#fff',
     fontSize: '1rem',
   },
-  joinButton: {
+  button: {
+    width: '100%',
     padding: '0.6rem',
-    borderRadius: '6px',
-    border: 'none',
-    backgroundColor: '#2ecc71',
+    backgroundColor: '#3498db',
     color: '#fff',
-    fontWeight: 'bold',
+    border: 'none',
+    borderRadius: 6,
     cursor: 'pointer',
     fontSize: '1rem',
   },
+  error: { color: 'salmon', marginTop: '0.5rem' },
 };

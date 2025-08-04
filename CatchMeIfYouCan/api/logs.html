@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>API Logs Terminal</title>
+  <style>
+    body {
+      margin: 0;
+      background: #2e3440;
+      color: #d8dee9;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    #terminal {
+      padding: 1rem;
+      height: 100vh;
+      overflow-y: scroll;
+      box-sizing: border-box;
+    }
+    .log { color: #8fbcbb; }       /* Info */
+    .error { color: #bf616a; }     /* Error */
+    .timestamp { color: #4c566a; margin-right: 0.5rem; }
+    .prefix::before { content: '$ '; color: #81a1c1; }
+  </style>
+</head>
+<body>
+  <div id="terminal"></div>
+  <script>
+    const term = document.getElementById('terminal');
+    const es = new EventSource('/logs/stream');
+
+    function appendLine(entry) {
+      const data = JSON.parse(entry.data);
+      const div = document.createElement('div');
+      div.className = entry.type;
+      div.innerHTML = 
+        '<span class="timestamp">[' + data.time + ']</span>' +
+        '<span class="prefix"></span>' +
+        data.msg;
+      term.appendChild(div);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    es.addEventListener('log', appendLine);
+    es.addEventListener('error', appendLine);
+    es.onerror = () => {
+      const div = document.createElement('div');
+      div.className = 'error';
+      div.textContent = '[SSE] Verbindung unterbrochen';
+      term.appendChild(div);
+    };
+  </script>
+</body>
+</html>

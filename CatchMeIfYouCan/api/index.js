@@ -6,17 +6,12 @@ import playerRoutes from './routes/player.js';
 const app = express();
 const PORT = 3001;
 
-app.use(cors({
-  origin: 'http://localhost:5173',
-  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
-}));
+app.use(cors());             // ✅ CORS ist okay
+app.use(express.json());     // ✅ DAS hier ist das Entscheidende!
 
-
-// Diese Zeile hinzufügen 👇
-// app.options('*', cors()); 
-
-app.use(express.json());
+// Danach erst die Routen
+app.use('/api/lobby', lobbyRoutes);
+app.use('/api/player', playerRoutes);
 
 app.use('/api/lobby', lobbyRoutes);
 app.use('/api/player', playerRoutes);

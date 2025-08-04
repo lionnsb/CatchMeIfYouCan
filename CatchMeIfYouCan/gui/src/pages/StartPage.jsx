@@ -15,8 +15,8 @@ export default function StartPage() {
   };
 
   const handleCreateLobby = async () => {
-    const newLobbyId = await createLobby(nickname);
-    navigate(`/lobby/${newLobbyId}`);
+  const { lobbyId } = await createLobby(nickname);
+  navigate(`/lobby/${lobbyId}`);
   };
 
   const handleJoinLobby = async () => {

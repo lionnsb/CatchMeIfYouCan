@@ -1,101 +1,153 @@
-// src/components/Lobby/LobbySetup.jsx
-
 import { useEffect, useState } from 'react';
 import { getLobbyPlayers } from '../../services/api';
+import { FaCrown } from 'react-icons/fa';
 
-export default function LobbySetup({ lobbyId, playerId, isAdmin, onStart, onLeaveLobby }) {
-  const [players, setPlayers] = useState({});
+export default function LobbySetup({ lobbyId, isAdmin, onStart }) {
+  const [players, setPlayers] = useState([]);
   const [radius, setRadius] = useState(200);
-  const [duration, setDuration] = useState(10);
+  const [roundTime, setRoundTime] = useState(10);
 
+  // Live-Update der Spielerliste alle 3 Sekunden
   useEffect(() => {
-    const interval = setInterval(async () => {
-      const data = await getLobbyPlayers(lobbyId);
-      setPlayers(data || {});
-    }, 2000); // alle 2 Sek. updaten
-    return () => clearInterval(interval);
+    let cancelled = false;
+    const fetchPlayers = async () => {
+      try {
+        const obj = await getLobbyPlayers(lobbyId);
+        const list = Object.values(obj);
+        if (!cancelled) setPlayers(list);
+      } catch (err) {
+        console.error('Fehler beim Laden der Spieler:', err);
+      }
+    };
+    fetchPlayers();
+    const id = setInterval(fetchPlayers, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, [lobbyId]);
 
   const handleStart = () => {
-    onStart({ radius, duration });
-  };
-
-  const handleLeave = async () => {
-    try {
-      await fetch(`http://localhost:3001/api/player/${playerId}`, {
-        method: 'DELETE',
-      });
-    } catch (err) {
-      console.warn('Fehler beim Verlassen der Lobby:', err);
-    }
-    onLeaveLobby();
+    onStart({ radius, roundTime });
   };
 
   return (
-    <div style={wrapperStyle}>
-      <h2>🎯 Lobby: {lobbyId}</h2>
-      <p>🧍 Spieler: {Object.keys(players).length}</p>
-      <ul>
-        {Object.values(players).map((p) => (
-          <li key={p.id}>{p.nickname || '👤 Unbekannt'}</li>
+    <div style={styles.container}>
+      <h2 style={styles.heading}>Lobby: {lobbyId}</h2>
+      <p style={styles.subheading}>{players.length} Spieler in der Lobby</p>
+
+      <ul style={styles.list}>
+        {players.map((p) => (
+          <li key={p.id} style={styles.listItem}>
+            {p.nickname}
+            {p.admin && <FaCrown style={styles.crown} />}
+          </li>
         ))}
       </ul>
 
       {isAdmin && (
-        <>
-          <div style={formGroup}>
-            <label>🎮 Radius (Meter):</label>
+        <div style={styles.settings}>
+          <div style={styles.settingRow}>
+            <label style={styles.label}>
+              Radius: <strong>{radius} m</strong>
+            </label>
             <input
-              type="number"
+              type="range"
+              min="100"
+              max="500"
+              step="50"
               value={radius}
-              onChange={(e) => setRadius(parseInt(e.target.value))}
+              onChange={(e) => setRadius(Number(e.target.value))}
+              style={styles.slider}
             />
           </div>
 
-          <div style={formGroup}>
-            <label>⏱️ Zeitlimit (Minuten):</label>
-            <input
-              type="number"
-              value={duration}
-              onChange={(e) => setDuration(parseInt(e.target.value))}
-            />
+          <div style={styles.settingRow}>
+            <label style={styles.label}>Rundenzeit:</label>
+            <select
+              value={roundTime}
+              onChange={(e) => setRoundTime(Number(e.target.value))}
+              style={styles.select}
+            >
+              {[5, 10, 15, 20, 30].map((m) => (
+                <option key={m} value={m}>
+                  {m} Minuten
+                </option>
+              ))}
+            </select>
           </div>
 
-          <button style={buttonStyle} onClick={handleStart}>🚀 Spiel starten</button>
-        </>
+          <button onClick={handleStart} style={styles.startButton}>
+            🚀 Spiel starten
+          </button>
+        </div>
       )}
-
-      <button style={leaveButton} onClick={handleLeave}>❌ Lobby verlassen</button>
     </div>
   );
 }
 
-const wrapperStyle = {
-  maxWidth: '400px',
-  margin: '5rem auto',
-  padding: '2rem',
-  backgroundColor: '#f7f7f7',
-  borderRadius: '10px',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-  fontFamily: 'sans-serif',
-  textAlign: 'center'
-};
-
-const formGroup = {
-  margin: '1rem 0'
-};
-
-const buttonStyle = {
-  padding: '0.7rem 1.5rem',
-  backgroundColor: '#2ecc71',
-  color: 'white',
-  border: 'none',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  marginTop: '1rem'
-};
-
-const leaveButton = {
-  ...buttonStyle,
-  backgroundColor: '#e74c3c'
+const styles = {
+  container: {
+    maxWidth: 500,
+    margin: '2rem auto',
+    padding: '1.5rem',
+    backgroundColor: '#2c2c2c',
+    borderRadius: 8,
+    color: '#fff',
+    fontFamily: 'sans-serif',
+    textAlign: 'center',
+  },
+  heading: {
+    marginBottom: '0.5rem',
+  },
+  subheading: {
+    marginBottom: '1rem',
+    fontSize: '1rem',
+    color: '#ccc',
+  },
+  list: {
+    listStyle: 'none',
+    padding: 0,
+    marginBottom: '1.5rem',
+  },
+  listItem: {
+    padding: '0.4rem 0',
+    fontSize: '1.1rem',
+  },
+  crown: {
+    color: 'gold',
+    marginLeft: 6,
+    verticalAlign: 'middle',
+  },
+  settings: {
+    marginTop: '1rem',
+    textAlign: 'left',
+  },
+  settingRow: {
+    marginBottom: '1rem',
+  },
+  label: {
+    display: 'block',
+    marginBottom: '0.3rem',
+  },
+  slider: {
+    width: '100%',
+  },
+  select: {
+    width: '100%',
+    padding: '0.4rem',
+    borderRadius: 4,
+    border: 'none',
+    fontSize: '1rem',
+  },
+  startButton: {
+    width: '100%',
+    padding: '0.6rem',
+    backgroundColor: '#27ae60',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    fontSize: '1rem',
+    cursor: 'pointer',
+  },
 };
