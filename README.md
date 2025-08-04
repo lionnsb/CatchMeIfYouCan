@@ -20,14 +20,14 @@ CatchMeIfYouCan/
 ## ✅ To-do Übersicht
 
 ### 📱 GUI (Frontend)
-- [] Startseite mit Lobby erstellen / beitreten
+- [ ] Startseite mit Lobby erstellen / beitreten
 - [ ] Kartenintegration mit GPS (z. B. Leaflet)
 - [ ] Radar-Visualisierung (Pings, Sichtbarkeit)
 - [ ] „Gefangen“-Button & Statusanzeige
 - [ ] Responsives Design (Mobile First)
 
 ### 🛠️ API (Backend)
-- [] Lobby erstellen / beitreten via Lobby-Code
+- [ ] Lobby erstellen / beitreten via Lobby-Code
 - [ ] Spielerregistrierung & Rollenverteilung
 - [ ] Positionsdaten empfangen & verarbeiten
 - [ ] Sichtbarkeitslogik (Radar)
@@ -39,8 +39,8 @@ CatchMeIfYouCan/
 - [ ] .env Beispiel für Umgebungsvariablen
 
 ### 📐 Konzept & Design
-- [] Spielidee und Ablauf dokumentiert
-- [] Mockup-Struktur geplant
+- [ ] Spielidee und Ablauf dokumentiert
+- [ ] Mockup-Struktur geplant
 - [ ] Visuelles UI-Design (Farben, Icons, etc.)
 - [ ] Logo und Branding
 
