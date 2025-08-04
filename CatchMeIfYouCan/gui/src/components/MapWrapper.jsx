@@ -7,7 +7,6 @@ import RadiusCircle from './RadiusCircle';
 import RadiusSelector from './RadiusSelector';
 import GeoFenceWarning from './GeoFenceWarning';
 import DevToolsPanel from './DevToolsPanel';
-
 import * as turf from '@turf/turf';
 
 const MAPTILER_KEY = 'P6K1Aupk86BRSs1GmAHF';
@@ -69,13 +68,24 @@ export default function MapWrapper() {
     setOutsideZone(!inside);
   }, [position, startCenter, radius]);
 
+  const panelStyle = {
+    position: 'absolute',
+    top: '1rem',
+    left: '1rem',
+    zIndex: 10,
+    padding: '1rem',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    color: '#222',
+    borderRadius: '12px',
+    boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+    maxWidth: '280px',
+    fontFamily: 'sans-serif'
+  };
+
   return (
     <div>
-      <div style={{ position: 'absolute', zIndex: 10, padding: '1rem' }}>
-       <DevToolsPanel
-        devMode={devMode}
-        setDevMode={setDevMode}
-        setPosition={setPosition}/>
+      <div style={panelStyle}>
+        <DevToolsPanel devMode={devMode} setDevMode={setDevMode} setPosition={setPosition} />
         <RadiusSelector radius={radius} setRadius={setRadius} />
         <GeoFenceWarning isOutside={outsideZone} />
       </div>
