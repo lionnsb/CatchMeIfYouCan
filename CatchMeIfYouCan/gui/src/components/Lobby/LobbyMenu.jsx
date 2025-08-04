@@ -1,146 +1,98 @@
 import { useState } from 'react';
+import JoinLobbyForm from './JoinLobbyForm';
 
 export default function LobbyMenu({ onJoin, onCreate }) {
-  const [nickname, setNickname] = useState('');
-  const [lobbyId, setLobbyId]       = useState('');
-  const [error, setError]           = useState(null);
-  const [loadingJoin, setLoadingJoin]   = useState(false);
-  const [loadingCreate, setLoadingCreate] = useState(false);
+  const [nickname, setNickname] = useState(
+    localStorage.getItem('nickname') || ''
+  );
 
-  // Lobby beitreten
-  const handleJoin = async (e) => {
-    e.preventDefault();
-    setError(null);
-    if (!nickname.trim()) {
-      setError('Bitte einen Nickname eingeben.');
-      return;
-    }
-    setLoadingJoin(true);
-    try {
-      await onJoin(lobbyId.trim().toUpperCase(), nickname.trim());
-    } catch (err) {
-      setError(err.message || 'Lobby nicht gefunden');
-    } finally {
-      setLoadingJoin(false);
-    }
+  const handleCreateClick = () => {
+    const name = nickname.trim();
+    if (!name) return alert('Bitte Nickname eingeben');
+    localStorage.setItem('nickname', name);
+    onCreate(name);
   };
 
-  // Neue Lobby erstellen
-  const handleCreate = async () => {
-    setError(null);
-    if (!nickname.trim()) {
-      setError('Bitte einen Nickname eingeben.');
-      return;
-    }
-    setLoadingCreate(true);
-    try {
-      await onCreate(nickname.trim());
-    } catch {
-      setError('Lobby konnte nicht erstellt werden');
-    } finally {
-      setLoadingCreate(false);
-    }
+  const handleJoinClick = (lobbyId) => {
+    const name = nickname.trim();
+    if (!name) return alert('Bitte Nickname eingeben');
+    localStorage.setItem('nickname', name);
+    onJoin(lobbyId, name);
   };
 
   return (
     <div style={styles.container}>
-      <div style={styles.panel}>
-        <h2 style={styles.title}>🎯 Catch Me If You Can</h2>
+      <h1 style={styles.title}>🎮 Catch Me If You Can</h1>
 
-        <label style={styles.label}>
-          Dein Nickname:
-          <input
-            type="text"
-            value={nickname}
-            onChange={e => setNickname(e.target.value)}
-            placeholder="z. B. Lion"
-            style={styles.input}
-          />
-        </label>
+      <label style={styles.label}>Dein Nickname:</label>
+      <input
+        type="text"
+        value={nickname}
+        onChange={(e) => setNickname(e.target.value)}
+        placeholder="z. B. Lion"
+        style={styles.input}
+      />
 
-        <form onSubmit={handleJoin} style={{ marginTop: '1rem' }}>
-          <input
-            type="text"
-            value={lobbyId}
-            onChange={e => setLobbyId(e.target.value)}
-            placeholder="Lobby-ID eingeben"
-            style={styles.input}
-            disabled={loadingJoin || loadingCreate}
-          />
-          <button
-            type="submit"
-            disabled={loadingJoin || loadingCreate}
-            style={{
-              ...styles.button,
-              backgroundColor: loadingJoin ? '#888' : '#2ecc71'
-            }}
-          >
-            {loadingJoin ? 'Warte…' : 'Beitreten'}
-          </button>
-        </form>
+      <button
+        onClick={handleCreateClick}
+        style={styles.buttonCreate}
+        disabled={!nickname.trim()}
+      >
+        ➕ Neue Lobby erstellen
+      </button>
 
-        <button
-          onClick={handleCreate}
-          disabled={loadingJoin || loadingCreate}
-          style={{
-            ...styles.button,
-            marginTop: '1rem',
-            backgroundColor: loadingCreate ? '#888' : '#3498db'
-          }}
-        >
-          {loadingCreate ? 'Warte…' : '🆕 Neue Lobby erstellen'}
-        </button>
+      <hr style={styles.divider} />
 
-        {error && <p style={styles.error}>{error}</p>}
-      </div>
+      <JoinLobbyForm onJoin={handleJoinClick} />
     </div>
   );
 }
 
 const styles = {
   container: {
-    height: '100vh', width: '100vw',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#1e1e1e', fontFamily: 'sans-serif'
-  },
-  panel: {
-    backgroundColor: '#2c2c2c',
+    maxWidth: 360,
+    margin: '5rem auto',
     padding: '2rem',
-    borderRadius: '12px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-    minWidth: '320px',
+    backgroundColor: '#2b2b2b',
+    borderRadius: 8,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
     color: '#fff',
-    display: 'flex', flexDirection: 'column'
+    textAlign: 'center',
+    fontFamily: 'sans-serif',
   },
   title: {
-    textAlign: 'center', margin: 0, marginBottom: '1rem'
+    marginBottom: '1rem',
+    fontSize: '1.5rem',
   },
   label: {
-    display: 'flex', flexDirection: 'column', fontSize: '0.9rem'
+    display: 'block',
+    marginBottom: '0.5rem',
+    fontSize: '1rem',
   },
   input: {
-    marginTop: '0.3rem',
-    padding: '0.6rem',
-    borderRadius: '6px',
-    border: '1px solid #555',
+    width: '100%',
+    padding: '0.5rem',
+    marginBottom: '1rem',
+    borderRadius: 6,
+    border: '1px solid #444',
     backgroundColor: '#333',
     color: '#fff',
     fontSize: '1rem',
-    width: '100%'
   },
-  button: {
+  buttonCreate: {
     width: '100%',
-    padding: '0.6rem',
-    border: 'none',
-    borderRadius: '6px',
+    padding: '0.75rem',
+    backgroundColor: '#27ae60',
     color: '#fff',
-    fontWeight: 'bold',
+    border: 'none',
+    borderRadius: 6,
+    fontSize: '1rem',
     cursor: 'pointer',
-    fontSize: '1rem'
+    marginBottom: '1rem',
   },
-  error: {
-    color: 'red',
-    marginTop: '1rem',
-    textAlign: 'center'
-  }
+  divider: {
+    border: 'none',
+    borderTop: '1px solid #444',
+    margin: '1.5rem 0',
+  },
 };

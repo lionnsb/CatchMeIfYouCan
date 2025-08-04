@@ -1,9 +1,12 @@
+// routes/lobby.js
+
 import express from 'express';
 import { db } from '../firebase.js';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
 
-// Hilfs-Funktion zum Generieren
+// Hilfs-Funktion: Lobby-Code generieren
 function generateLobbyCode(length = 5) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -13,66 +16,61 @@ function generateLobbyCode(length = 5) {
   return code;
 }
 
-// 1) POST /api/lobby  → Lobby erstellen
+// POST /api/lobby
+// Body: { nickname }
 router.post('/', async (req, res) => {
+    console.log('REQUEST BODY:', req.body); // 👈 Hinzufügen
+
+  const { nickname } = req.body;
+  if (!nickname) {
+    return res.status(400).json({ error: 'nickname erforderlich' });
+  }
+  console.log(`🆕  LOBBY CREATE REQUEST: ${nickname}`);
   try {
+    // 1) Lobby anlegen
     const lobbyId = generateLobbyCode();
     await db.ref(`lobbies/${lobbyId}`).set({
       id: lobbyId,
       createdAt: Date.now(),
       players: {}
     });
-    res.status(201).json({ lobbyId });
+    console.log(`🆕  LOBBY CREATED: ${lobbyId}`);
+
+    // 2) Admin-Spieler anlegen
+    const playerId = uuidv4();
+    const playerData = {
+      id: playerId,
+      joinedAt: Date.now(),
+      nickname,
+      admin: true,
+      position: null
+    };
+    await db.ref(`lobbies/${lobbyId}/players/${playerId}`).set(playerData);
+    console.log(`👤  PLAYER STORED: ${playerId} (${nickname}) in Lobby ${lobbyId} 👑`);
+
+    // 3) Alles zurückgeben
+    res.status(201).json({ lobbyId, playerId });
   } catch (err) {
-    console.error(err);
+    console.error(`⚠️  ERROR CREATING LOBBY+PLAYER:`, err.message);
     res.status(500).json({ error: 'Lobby konnte nicht erstellt werden' });
   }
 });
 
-// ⇣ Neu: GET /api/lobby/:lobbyId  → Lobby-Daten auslesen
+// GET /api/lobby/:lobbyId  → Lobby-Daten auslesen
 router.get('/:lobbyId', async (req, res) => {
-  const { lobbyId } = req.params;
-  try {
-    const snap = await db.ref(`lobbies/${lobbyId}`).once('value');
-    if (!snap.exists()) {
-      return res.status(404).json({ error: 'Lobby nicht gefunden' });
-    }
-    const lobby = snap.val();
-    // wir geben id + players zurück (inkl. ihrer Position, wenn gesetzt)
-    return res.json({
-      id: lobby.id,
-      createdAt: lobby.createdAt,
-      players: lobby.players || {}
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Fehler beim Lesen der Lobby' });
+  const { lobbyId } = req.params; // lobbyId sollte hier ein String sein
+  if (!lobbyId || typeof lobbyId !== 'string') {
+    return res.status(400).json({ error: 'Ungültige Lobby-ID' });
   }
-});
-
-// z. B. in player.routes.js
-router.delete('/:playerId', async (req, res) => {
-  const { playerId } = req.params;
   try {
-    const snap = await db.ref('lobbies').once('value');
-    let removed = false;
-
-    snap.forEach((lobbySnap) => {
-      const lobby = lobbySnap.val();
-      if (lobby.players && lobby.players[playerId]) {
-        db.ref(`lobbies/${lobbySnap.key}/players/${playerId}`).remove();
-        removed = true;
-      }
-    });
-
-    if (removed) {
-      return res.status(200).json({ success: true });
-    } else {
-      return res.status(404).json({ error: 'Player not found in any lobby' });
+    const snapshot = await db.ref(`lobbies/${lobbyId}`).once('value');
+    const lobbyData = snapshot.val();
+    if (!lobbyData) {
+      return res.status(404).json({ error: 'Lobby nicht gefunden.' });
     }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Fehler beim Entfernen des Spielers' });
+    res.json(lobbyData);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
