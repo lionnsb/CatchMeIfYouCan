@@ -1,7 +1,5 @@
-import MapWrapper from './components/MapWrapper';
+import LobbyContainer from './containers/LobbyContainer';
 
-function App() {
-  return <MapWrapper />;
+export default function App() {
+  return <LobbyContainer />;
 }
-
-export default App;
